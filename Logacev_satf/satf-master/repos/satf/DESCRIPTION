@@ -1,0 +1,11 @@
+Package: satf
+Type: Package
+Title: Computes speed-accuracy tradeoff function estimates from 'yes'/'no'-response data.
+Version: 1.0
+Date: 2013-11-10
+Author: Pavel Logacev
+Maintainer: Pavel Logacev <pavellogacev@gmail.com>
+Description: More about what it does (maybe more than one line)
+License: What Licence is it under ?
+Depends: Rcpp (>= 0.10.5), plyr, maxLik, sets, nloptr
+LinkingTo: Rcpp
