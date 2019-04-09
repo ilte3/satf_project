@@ -1,3 +1,6 @@
+library(tidyverse)
+library(magrittr)
+
 satf <- function(t, intercept, rate, asymptote) {
   ifelse(t > intercept, asymptote*(1-exp(-rate*(t-intercept))), 0)
 }
@@ -36,10 +39,6 @@ test_gen <- satf_gen(time = seq(0, 4.5, 0.5), n = 1000, intercept = 0.3, rate = 
 test_gen2 <- satf_gen(time = seq(0, 4.5, 0.5), n = 1000, intercept = 0.4, rate = 0.9, asymptote = 2, label = "condition2")
 test_gen3 <- satf_gen(time = seq(0, 4.5, 0.5), n = 1000, intercept = 0.5, rate = 1, asymptote = 3, label = "condition3")
 test_gen_bound <- rbind(test_gen, test_gen2, test_gen3)
-
-#####
-library(tidyverse)
-library(magrittr)
 
 satf_calc <- function(data) {
   calc_hit <- data.frame(data %>% filter(is_signal == 1)) %>% group_by(condition, interval) %>% 
