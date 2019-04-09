@@ -44,7 +44,7 @@ satf_gen_cond <- function(mu, criterion, time, n) {
   df$p_yes <- p_yes(mu, criterion)
   df$response <- sapply(df$p_yes, function(p_yes) r_yes(n = 1, p_yes))
   df[, c('interval', 'time', 'trial', 'response')]
-  }
+}
 
 satf_gen_cond(seq(0, 9, 1), seq(0, 4.5, 0.5), seq(0, 9, 1), n = 10^4)
 
@@ -57,7 +57,7 @@ satf_gen <- function(time, n, intercept, rate, asymptote) {
   df1$is_signal <- 1
   df1$trial = df1$trial + max(df0$trial)
   rbind(df0, df1)
-  }
+}
 
 satf_gen 
 

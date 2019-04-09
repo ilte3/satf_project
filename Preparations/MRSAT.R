@@ -4,7 +4,6 @@ library(mrsat)
 data(Auditory_demo)
 View(Auditory_demo)
 
-
 ## define how conditions are grouped
 my.signal <- list(noint = c(1,3), 
                   obrel = c(5,8), 
@@ -15,7 +14,7 @@ my.noise <- list(noint = c(2,4),
 
 ## get bins
 d.bins <- get.bins(Auditory_demo, auditory=TRUE)
-
+View(d.bins$bins)
 #check how the RT are binned.
 plot(d.bins$opt.bins)
 
@@ -24,8 +23,8 @@ d.dprime <- get.dprime(d.bins$bins, signal.list=my.signal, noise.list=my.noise,
                        is.index=TRUE, binmax=14)
 
 View(d.dprime)
-
 attributes(d.dprime)
+?get.dprime
 
 # x <- data.frame(0)
 # attr(x, "class") <- c("mrsat.data", "data.frame")
@@ -114,7 +113,6 @@ exp1.signal <- list(noint = c(1,3),
 exp1.noise <- list(noint = c(2,4), 
                    obrel = c(6, 7, 9, 10), 
                    obrelsub = c(12, 13, 15, 16))
-
 
 # tag bins
 s01.bins <- get.bins(Auditory_demo, auditory=TRUE, window = "fixed")
