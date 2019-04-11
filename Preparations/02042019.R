@@ -1,3 +1,6 @@
+library(tidyverse)
+library(magrittr)
+
 satf <- function(t, intercept, rate, asymptote) {
   ifelse(t > intercept, asymptote*(1-exp(-rate*(t-intercept))), 0)
 }
@@ -44,10 +47,6 @@ asymptote = 3
 
 test_gen <- satf_gen(time = time, n = n, intercept = intercept, rate = rate, asymptote = asymptote)
 View(test_gen)
-
-#####
-library(tidyverse)
-library(magrittr)
 
 satf_calc <- function(data) {
   calc_hit <- data.frame(data %>% filter(is_signal == 1)) %>% group_by(interval) %>% 
