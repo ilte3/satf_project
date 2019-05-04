@@ -66,7 +66,6 @@ plot(fit311, main="311")
 
 SATsummary.list(list(fit333, fit311))
 
-
 # create a table with experiment information (participants and such)
 # draw one incp rate asymp - "simulated participant"
 # one sample - two conditions - fitsatcurve 333 ->>>>> extract params
@@ -75,3 +74,7 @@ fit333$fit$par
 # asymp mean 3 std 1
 # rate mean 1 std 0.1 sqr
 # incp mean 0.4 std 0.1 sqr
+
+# needs to return INFO
+# input avgs, deltas
+# how much we are off by

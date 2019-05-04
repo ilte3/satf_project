@@ -38,20 +38,19 @@ mrsat_fitcurve <- function(data, show_plot = FALSE) {
                   hit.denom = n_signal, fa, fa.correction, fa.denom = n_noise, 
                   lags = time, dprimes = dprime, condition)
   
-  pc222 <- list(asym = c(1, 2), rate = c(1, 2), incp = c(1, 2))
-  fit222 <- fit.SATcurve(data, par.cond = pc222)
-  #summary.SATcurve(fit222)
+  pc112 <- list(asym = c(1, 1), rate = c(1, 1), incp = c(1, 2))
+  fit112 <- fit.SATcurve(data, par.cond = pc112)
   
-  if(show_plot) plot(fit222, main = "222")
+  if(show_plot) plot(fit112, main = "112")
   
-  asymptote <- fit222$fit$par[1:2]
-  rate <- fit222$fit$par[3:4]
-  intercept <- fit222$fit$par[5:6]
+  asymptotes <- fit112$fit$par[1]
+  rates <- fit112$fit$par[2]
+  intercepts <- fit112$fit$par[3:4]
   
-  data.frame(asymptote, rate, intercept)
+  data.frame(asymptotes, rates, intercepts)
 }
 
-sim_participant <- function(n, time, intercept, rate, asymptote, show_plot = FALSE)
+sim_participant <- function(n, time, intercept, rate, asymptote, show_plot = FALSE) 
 {
   responses1 <- satf_gen(time = time, n = n, intercept = intercept[1], rate = rate[1], asymptote = asymptote[1], label = "condition1")
   responses2 <- satf_gen(time = time, n = n, intercept = intercept[2], rate = rate[2], asymptote = asymptote[2], label = "condition2")
@@ -65,20 +64,20 @@ sim_participant <- function(n, time, intercept, rate, asymptote, show_plot = FAL
 
 ###################################################################################################################################
 
-n <- 1000
+n <- 50
 time <- seq(0, 5.6, 0.35)
 
 avg_incp <- rnorm(1, 0.4, 0.1)^2
-avg_rate <- rnorm(1, 0.4, 0.1)^2
+avg_rate <- rnorm(1, 1, 0.1)^2
 avg_asymp <- rnorm(1, 3, 1)
 
-delta_intercept = .050
-delta_rate = .2
-delta_asymptote = 1
+delta_intercept = 0
+delta_rate = 0
+delta_asymptote = 0
 
 intercept <- avg_incp + c(-.5, .5)*delta_intercept
 rate <- avg_rate + c(-.5, .5)*delta_rate
 asymptote <- avg_asymp + c(-.5, .5)*delta_asymptote
 
-estimates <- sim_participant(n, time, intercept, rate, asymptote, show_plot = FALSE)
+estimates <- sim_participant(n, time, intercept, rate, asymptote, show_plot = TRUE)
 estimates
