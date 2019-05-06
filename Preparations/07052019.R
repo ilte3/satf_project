@@ -81,3 +81,17 @@ asymptote <- avg_asymp + c(-.5, .5)*delta_asymptote
 
 estimates <- sim_participant(n, time, intercept, rate, asymptote, show_plot = TRUE)
 estimates
+
+###
+
+delta_intercept1 = 0
+intercept1 <- avg_incp + c(-.5, .5)*delta_intercept1
+estimates1 <- sim_participant(n, time, intercept1, rate, asymptote, show_plot = TRUE)
+
+delta_intercept2 = 0.05
+intercept2 <- avg_incp + c(-.5, .5)*delta_intercept2
+estimates2 <- sim_participant(n, time, intercept2, rate, asymptote, show_plot = TRUE)
+
+delta_intercept3 = 0.1
+intercept3 <- avg_incp + c(-.5, .5)*delta_intercept3
+estimates3 <- sim_participant(n, time, intercept3, rate, asymptote, show_plot = TRUE)
