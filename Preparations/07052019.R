@@ -67,9 +67,9 @@ sim_participant <- function(n, time, intercept, rate, asymptote, show_plot = FAL
 n <- 50
 time <- seq(0, 5.6, 0.35)
 
-avg_incp <- rnorm(1, 0.4, 0.1)^2
-avg_rate <- rnorm(1, 1, 0.1)^2
-avg_asymp <- rnorm(1, 3, 1)
+avg_incp <- 0.4
+avg_rate <- 1
+avg_asymp <- 3
 
 delta_intercept = 0
 delta_rate = 0
@@ -87,6 +87,7 @@ estimates
 delta_intercept1 = 0
 intercept1 <- avg_incp + c(-.5, .5)*delta_intercept1
 estimates1 <- sim_participant(n, time, intercept1, rate, asymptote, show_plot = TRUE)
+estimates1
 
 delta_intercept2 = 0.05
 intercept2 <- avg_incp + c(-.5, .5)*delta_intercept2
@@ -95,3 +96,5 @@ estimates2 <- sim_participant(n, time, intercept2, rate, asymptote, show_plot = 
 delta_intercept3 = 0.1
 intercept3 <- avg_incp + c(-.5, .5)*delta_intercept3
 estimates3 <- sim_participant(n, time, intercept3, rate, asymptote, show_plot = TRUE)
+
+# twenty participants
