@@ -38,23 +38,25 @@ mrsat_fitcurve <- function(data, show_plot = FALSE) {
                   hit.denom = n_signal, fa, fa.correction, fa.denom = n_noise, 
                   lags = time, dprimes = dprime, condition)
   
-  pc222 <- list(asym = c(1, 2), rate = c(1, 2), incp = c(1, 2))
-  fit222 <- fit.SATcurve(data, par.cond = pc222)
-  sum_curve <- summary.SATcurve(fit222)
+  pc <- list(asym = c(1, 2), rate = c(1, 2), incp = c(1, 2))
+  fit <- fit.SATcurve(data, par.cond = pc)
+  sum_curve <- summary.SATcurve(fit)
   
-  if(show_plot) plot(fit222, main = "222")
+  if(show_plot) plot(fit, main = "222")
   
-  data %T>% 
+  data <- data %>% ungroup() %T>% 
     {.$true_intercept1 = intercept[1]} %T>% {.$true_intercept2 = intercept[2]} %T>%
     {.$true_rate1 = rate[1]} %T>% {.$true_rate2 = rate[2]} %T>%
     {.$true_asymptote1 = asymptote[1]} %T>% {.$true_asymptote2 = asymptote[2]} %T>%
     {.$intercept1 = sum_curve$incp1} %T>% {.$intercept2 <- sum_curve$incp2} %T>%
     {.$rate1 = sum_curve$rate1} %T>% {.$rate2 = sum_curve$rate2} %T>%
     {.$asymptote1 = sum_curve$asym1} %T>% {.$asymptote2 = sum_curve$asym2} %T>%
+    # {.$model = c(length(pc$incp), length(pc$rate), length(pc$asym))} %T>%
     {.$R2 = sum_curve$R2} %T>% {.$adjR2 = sum_curve$adjR2} %T>%
     {.$AIC = -1*sum_curve$AIC} %>%
     dplyr::select(true_intercept1, true_intercept2, true_rate1, true_rate2, true_asymptote1, true_asymptote2,
                   R2, adjR2, AIC, intercept1, intercept2, rate1, rate2, asymptote1, asymptote2)
+  as.data.frame(t(colMeans(data)))
 }
 
 sim_participant <- function(n, time, intercept, rate, asymptote, show_plot = FALSE) 
@@ -71,12 +73,15 @@ sim_participant <- function(n, time, intercept, rate, asymptote, show_plot = FAL
 
 ###################################################################################################################################
 
-n <- 50
+n_simulations <- 3
+n_participants <- 3
+n_trials_per_interval <- 50
+
 time <- seq(0, 5.6, 0.35)
 
-avg_incp <- 0.4
-avg_rate <- 1
-avg_asymp <- 3
+avg_incp <- rnorm(1, 0.4, 0.1)^2
+avg_rate <- rnorm(1, 0.4, 0.1)^2
+avg_asymp <- rnorm(1, 3, 1)
 
 delta_intercept = 0.05
 delta_rate = 0.05
@@ -86,7 +91,20 @@ intercept <- avg_incp + c(-.5, .5)*delta_intercept
 rate <- avg_rate + c(-.5, .5)*delta_rate
 asymptote <- avg_asymp + c(-.5, .5)*delta_asymptote
 
-estimates <- sim_participant(n, time, intercept, rate, asymptote, show_plot = FALSE)
-estimates
+intercepts <- rep(list(intercept), n_participants)
+rates <- rep(list(rate), n_participants)
+asymptotes <- rep(list(asymptote), n_participants)
 
-View(estimates)
+sim_tmp <- plyr::ldply(1:n_simulations, function(j) {
+  sim_tmp2 <- plyr::ldply(1:n_participants, function(i) {
+    estimates <- sim_participant(n_trials_per_interval, time,
+                                 intercepts[[i]], rates[[i]], asymptotes[[i]], 
+                                 show_plot = FALSE)
+    estimates %T>% {.$participant_id = i}
+  })
+  sim_tmp2 %T>% {.$simulation_id <- j} %>% 
+    dplyr::select(simulation_id, participant_id, true_intercept1, true_intercept2, true_rate1, true_rate2, 
+                  true_asymptote1, true_asymptote2, R2, adjR2, AIC, intercept1, intercept2, rate1, rate2, asymptote1, asymptote2)
+})
+
+head(sim_tmp)
