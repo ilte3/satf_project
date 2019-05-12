@@ -44,6 +44,8 @@ mrsat_fitcurve <- function(data, show_plot = FALSE) {
   
   if(show_plot) plot(fit, main = "222")
   
+  n_unique <- function(pc) length(unique(pc))
+  
   data <- data %>% ungroup() %T>% 
     {.$true_intercept1 = intercept[1]} %T>% {.$true_intercept2 = intercept[2]} %T>%
     {.$true_rate1 = rate[1]} %T>% {.$true_rate2 = rate[2]} %T>%
@@ -51,12 +53,16 @@ mrsat_fitcurve <- function(data, show_plot = FALSE) {
     {.$intercept1 = sum_curve$incp1} %T>% {.$intercept2 <- sum_curve$incp2} %T>%
     {.$rate1 = sum_curve$rate1} %T>% {.$rate2 = sum_curve$rate2} %T>%
     {.$asymptote1 = sum_curve$asym1} %T>% {.$asymptote2 = sum_curve$asym2} %T>%
-    # {.$model = c(length(pc$incp), length(pc$rate), length(pc$asym))} %T>%
     {.$R2 = sum_curve$R2} %T>% {.$adjR2 = sum_curve$adjR2} %T>%
     {.$AIC = -1*sum_curve$AIC} %>%
     dplyr::select(true_intercept1, true_intercept2, true_rate1, true_rate2, true_asymptote1, true_asymptote2,
                   R2, adjR2, AIC, intercept1, intercept2, rate1, rate2, asymptote1, asymptote2)
-  as.data.frame(t(colMeans(data)))
+  
+  n_unique <- function(pc) length(unique(pc))
+  
+  as.data.frame(t(colMeans(data))) %T>% {.$model = sapply(pc, n_unique) %>% paste(collapse = "-")} %>%
+    dplyr::select(model, true_intercept1, true_intercept2, true_rate1, true_rate2, true_asymptote1, true_asymptote2,
+                  R2, adjR2, AIC, intercept1, intercept2, rate1, rate2, asymptote1, asymptote2)
 }
 
 sim_participant <- function(n, time, intercept, rate, asymptote, show_plot = FALSE) 
@@ -103,7 +109,7 @@ sim_tmp <- plyr::ldply(1:n_simulations, function(j) {
     estimates %T>% {.$participant_id = i}
   })
   sim_tmp2 %T>% {.$simulation_id <- j} %>% 
-    dplyr::select(simulation_id, participant_id, true_intercept1, true_intercept2, true_rate1, true_rate2, 
+    dplyr::select(simulation_id, model, participant_id, true_intercept1, true_intercept2, true_rate1, true_rate2, 
                   true_asymptote1, true_asymptote2, R2, adjR2, AIC, intercept1, intercept2, rate1, rate2, asymptote1, asymptote2)
 })
 
