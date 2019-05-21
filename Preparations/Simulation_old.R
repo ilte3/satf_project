@@ -44,13 +44,11 @@ mrsat_fitcurve <- function(data, show_plot = FALSE) {
   
   if(show_plot) plot(fit, main = "222")
   
-  n_unique <- function(pc) length(unique(pc))
-  
   data <- data %>% ungroup() %T>% 
     {.$true_intercept1 = intercept[1]} %T>% {.$true_intercept2 = intercept[2]} %T>%
     {.$true_rate1 = rate[1]} %T>% {.$true_rate2 = rate[2]} %T>%
     {.$true_asymptote1 = asymptote[1]} %T>% {.$true_asymptote2 = asymptote[2]} %T>%
-    {.$intercept1 = sum_curve$incp1} %T>% {.$intercept2 <- sum_curve$incp2} %T>%
+    {.$intercept1 = sum_curve$incp1} %T>% {.$intercept2 = sum_curve$incp2} %T>%
     {.$rate1 = sum_curve$rate1} %T>% {.$rate2 = sum_curve$rate2} %T>%
     {.$asymptote1 = sum_curve$asym1} %T>% {.$asymptote2 = sum_curve$asym2} %T>%
     {.$R2 = sum_curve$R2} %T>% {.$adjR2 = sum_curve$adjR2} %T>%

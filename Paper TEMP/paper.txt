@@ -1,0 +1,12 @@
+what is the sat methodology and why it is used
+judgment tasks
+an example of a finding of no differences in findings
+sat studies, cite some literature
+    
+    the problem, the why question: the methodology is good but is it reliable?
+    the power of the study (statistical significance and statistical power, false negatives/positives)
+    
+        the approach taken to solve the issue and the logic (help us estimate the power given realistic assumptions from the papers) behind it
+        
+          ***some results and their implications
+            
