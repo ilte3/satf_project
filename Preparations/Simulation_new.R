@@ -30,7 +30,7 @@ cmp_dprime <- function(data) {
   data
 }
 
-mrsat_fitcurve <- function(data, show_plot = FALSE) {
+mrsat_fitcurve <- function(data, pc = list(asym = c(1, 2), rate = c(1, 2), incp = c(1, 2)), show_plot = FALSE) {
   data <- data %T>% 
     {.$hit.correction = 'none'} %T>% 
     {.$fa.correction = 'none'} %>% 
@@ -38,7 +38,6 @@ mrsat_fitcurve <- function(data, show_plot = FALSE) {
                   hit.denom = n_signal, fa, fa.correction, fa.denom = n_noise, 
                   lags = time, dprimes = dprime, condition)
   
-  pc <- list(asym = c(1, 2), rate = c(1, 2), incp = c(1, 2))
   fit <- fit.SATcurve(data, par.cond = pc)
   sum_curve <- summary.SATcurve(fit)
   
@@ -53,7 +52,7 @@ mrsat_fitcurve <- function(data, show_plot = FALSE) {
              intercept1 = sum_curve$incp1, intercept2 = sum_curve$incp2,
              rate1 = sum_curve$rate1, rate2 = sum_curve$rate2,
              asymptote1 = sum_curve$asym1, asymptote2 = sum_curve$asym2,
-             R2 = sum_curve$R2, adjR2 = sum_curve$adjR2, AIC = -1*sum_curve$AIC)%>%
+             R2 = sum_curve$R2, adjR2 = sum_curve$adjR2, AIC = sum_curve$AIC)%>%
                     dplyr::select(model, true_intercept1, true_intercept2, true_rate1, true_rate2,
                                   true_asymptote1, true_asymptote2, R2, adjR2, AIC,
                                   intercept1, intercept2, rate1, rate2, asymptote1, asymptote2)
@@ -68,13 +67,21 @@ sim_participant <- function(n, time, intercept, rate, asymptote, show_plot = FAL
   acc_stat <- cmp_acc_stat(data = responses)
   acc_stat <- cmp_dprime(data = acc_stat)
   
-  mrsat_fitcurve(acc_stat, show_plot = show_plot)
+  res111 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 1), rate = c(1, 1), incp = c(1, 1)), show_plot = FALSE)
+  res112 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 1), rate = c(1, 1), incp = c(1, 2)), show_plot = FALSE)
+  res121 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 1), rate = c(1, 2), incp = c(1, 1)), show_plot = FALSE)
+  res122 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 1), rate = c(1, 2), incp = c(1, 2)), show_plot = FALSE)
+  res211 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 2), rate = c(1, 1), incp = c(1, 1)), show_plot = FALSE)
+  res221 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 2), rate = c(1, 2), incp = c(1, 1)), show_plot = FALSE)
+  res212 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 2), rate = c(1, 1), incp = c(1, 2)), show_plot = FALSE)
+  res222 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 2), rate = c(1, 2), incp = c(1, 2)), show_plot = FALSE)
+  dplyr::bind_rows(res111, res112, res121, res122, res211, res221, res212, res222)
 }
 
 ###################################################################################################################################
 
-n_simulations <- 3
-n_participants <- 3
+n_simulations <- 1
+n_participants <- 1
 n_trials_per_interval <- 50
 
 time <- seq(0, 5.6, 0.35)
