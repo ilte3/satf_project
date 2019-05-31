@@ -34,3 +34,72 @@ satf_gen <- function(time, n, intercept, rate, asymptote, label = "condition1") 
   df1$trial = df1$trial + max(df0$trial)
   rbind(df0, df1)
 }
+
+cmp_acc_stat <- function(data)
+{
+  calc_signal <- data %>% filter(is_signal == 1) %>% group_by(condition, interval) %>% dplyr::summarize(hit = mean(response), miss = mean(!response), time = mean(time), n_signal = length(response))
+  calc_noise <- data %>% filter(is_signal == 0) %>% group_by(condition, interval) %>% dplyr::summarize(fa = mean(response), creject = mean(!response), time = mean(time), n_noise = length(response))
+  left_join(calc_signal, calc_noise) %>% dplyr::select(interval, time, hit, miss, n_signal, fa, creject, n_noise, condition )
+}
+
+cmp_dprime <- function(data) {
+  n_signal <- data$hit + data$miss
+  n_noise <- data$fa + data$creject
+  p_hit <- data$hit/n_signal
+  p_fa <- data$fa/n_noise
+  data$dprime <- qnorm(p_hit) - qnorm(p_fa)
+  data$criterion <- -0.5*(qnorm(p_hit) + qnorm(p_fa))
+  data %<>% dplyr::select(interval, time, hit, miss, n_signal, fa, creject, n_noise, dprime, criterion, condition) 
+  data
+}
+
+mrsat_fitcurve <- function(data, pc = list(asym = c(1, 2), rate = c(1, 2), incp = c(1, 2)), show_plot = FALSE) {
+  data <- data %T>% 
+  {.$hit.correction = 'none'} %T>% 
+  {.$fa.correction = 'none'} %>% 
+    dplyr::select(bin = interval, hit, hit.correction,
+                  hit.denom = n_signal, fa, fa.correction, fa.denom = n_noise, 
+                  lags = time, dprimes = dprime, condition)
+  
+  fit <- fit.SATcurve(data, par.cond = pc)
+  sum_curve <- summary.SATcurve(fit)
+  
+  if(show_plot) plot(fit, main = "222")
+  
+  n_unique <- function(x) length(unique(x))
+  
+  model_id <- sapply(pc, n_unique) %>% paste(collapse = "-")
+  model_spec <- data.frame(model = model_id,
+                           true_intercept1 = intercept[1], true_intercept2 = intercept[2],
+                           true_rate1 = rate[1], true_rate2 = rate[2],
+                           true_asymptote1 = asymptote[1], true_asymptote2 = asymptote[2],
+                           stringsAsFactors = FALSE)
+  model_fit <- sum_curve[c("incp1", "incp2", "rate1", "rate2", "asym1", "asym2", "R2", "adjR2", "AIC")]
+  
+  model_spec %>% cbind(model_fit) %>% 
+      dplyr::select(model, true_intercept1, true_intercept2, true_rate1, true_rate2,
+                      true_asymptote1, true_asymptote2, R2, adjR2, AIC,
+                      intercept1 = incp1, intercept2 = incp2, 
+                      rate1, rate2, 
+                      asymptote1 = asym1, asymptote2 = asym2)
+}
+
+sim_participant <- function(n, time, intercept, rate, asymptote, show_plot = FALSE) 
+{
+  responses1 <- satf_gen(time = time, n = n, intercept = intercept[1], rate = rate[1], asymptote = asymptote[1], label = "condition1")
+  responses2 <- satf_gen(time = time, n = n, intercept = intercept[2], rate = rate[2], asymptote = asymptote[2], label = "condition2")
+  responses <- rbind(responses1, responses2)
+  
+  acc_stat <- cmp_acc_stat(data = responses)
+  acc_stat <- cmp_dprime(data = acc_stat)
+  
+  res111 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 1), rate = c(1, 1), incp = c(1, 1)), show_plot = FALSE)
+  res112 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 1), rate = c(1, 1), incp = c(1, 2)), show_plot = FALSE)
+  res121 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 1), rate = c(1, 2), incp = c(1, 1)), show_plot = FALSE)
+  res122 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 1), rate = c(1, 2), incp = c(1, 2)), show_plot = FALSE)
+  res211 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 2), rate = c(1, 1), incp = c(1, 1)), show_plot = FALSE)
+  res221 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 2), rate = c(1, 2), incp = c(1, 1)), show_plot = FALSE)
+  res212 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 2), rate = c(1, 1), incp = c(1, 2)), show_plot = FALSE)
+  res222 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 2), rate = c(1, 2), incp = c(1, 2)), show_plot = FALSE)
+  dplyr::bind_rows(res111, res112, res121, res122, res211, res221, res212, res222)
+}
