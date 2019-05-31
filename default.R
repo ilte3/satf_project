@@ -19,9 +19,11 @@ satf_gen_cond <- function(mu, criterion, time, n, label) {
   trial = rep(1:n, each = length(time))
   interval <- 1:length(time)
   df <- data.frame(condition = label, interval = interval, time = time, trial = trial, mu = mu, criterion = criterion)
-  df$p_yes <- p_yes(mu, criterion)
-  df$response <- sapply(df$p_yes, function(p_yes) r_yes(n = 1, p_yes))
-  df[, c('condition', 'interval', 'time', 'trial', 'response')]
+  #df$p_yes <- p_yes(mu, criterion)
+  #df$response <- sapply(df$p_yes, function(p_yes) r_yes(n = 1, p_yes))
+  df$evidence_position <- rnorm(nrow(df), mean = mu, sd = 1)
+  df$response <- df$evidence_position > criterion
+  df %>% dplyr::select(condition, interval, time, trial, response)
 }
 
 satf_gen <- function(time, n, intercept, rate, asymptote, label = "condition1") {
@@ -39,7 +41,8 @@ cmp_acc_stat <- function(data)
 {
   calc_signal <- data %>% filter(is_signal == 1) %>% group_by(condition, interval) %>% dplyr::summarize(hit = mean(response), miss = mean(!response), time = mean(time), n_signal = length(response))
   calc_noise <- data %>% filter(is_signal == 0) %>% group_by(condition, interval) %>% dplyr::summarize(fa = mean(response), creject = mean(!response), time = mean(time), n_noise = length(response))
-  left_join(calc_signal, calc_noise) %>% dplyr::select(interval, time, hit, miss, n_signal, fa, creject, n_noise, condition )
+  left_join(calc_signal, calc_noise) %>% 
+            dplyr::select(interval, time, hit, miss, n_signal, fa, creject, n_noise, condition )
 }
 
 cmp_dprime <- function(data) {
