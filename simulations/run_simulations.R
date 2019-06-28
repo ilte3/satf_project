@@ -1,7 +1,7 @@
-source("./simulations_functions.R")
+#source("./simulations_functions.R")
 library(mrsat)
-library(doMC)
-doMC::registerDoMC(4)
+#library(doMC)
+#doMC::registerDoMC(4)
 
 run_simulation <- function(n_simulations, n_participants, n_trials_per_interval, avg_incp, avg_rate, avg_asymp, delta_intercept, delta_rate, delta_asymptote) 
 {
@@ -21,26 +21,30 @@ run_simulation <- function(n_simulations, n_participants, n_trials_per_interval,
   {
       estimates <- 
       plyr::ldply(1:n_participants, function(i) {
-          estimates_i <- sim_participant(n_trials_per_interval, time, intercepts[[i]], rates[[i]], asymptotes[[i]])
+          estimates_i <- sim_participant(n_trials_per_interval, time, intercepts[[i]], rates[[i]], asymptotes[[i]], 
+                                         debug_fname = paste0(dir, "/", simulation_id, "_", i, ".rda") )
           estimates_i %T>% {.$participant_id = i}
-      })
+      }, .progress = "text")
       
       estimates <- estimates %T>% {.$simulation_id <- simulation_id} %>% 
         dplyr::select(simulation_id, model, participant_id, 
                       true_intercept1, true_intercept2, 
                       true_rate1, true_rate2, 
                       true_asymptote1, true_asymptote2, 
-                      R2, adjR2, AIC, 
+                      R2, adjR2, logLik, AIC, 
                       intercept1, intercept2, 
                       rate1, rate2, 
                       asymptote1, asymptote2)
       
-      feather::write_feather(estimates, path = paste0(dir, "/", simulation_id, ".feather"))
+      feather::write_feather( estimates, path = paste0(dir, "/", simulation_id, ".feather") )
+
+      estimates
   }
   
   sim_res <- plyr::ldply(1:n_simulations, function(j) {
       estimates <- sim_participants(n_trials_per_interval, time, intercepts, rates, asymptotes, j)
-  }, .parallel = TRUE)
+  }, .parallel = F)# , .progress = "text")
+  
   
   feather::write_feather(sim_res, path = paste0(dir, "/", "all_simulations", ".feather"))
 }
@@ -67,4 +71,13 @@ run_simulation(n_simulations, n_participants, n_trials_per_interval, avg_incp, a
 run_simulation(n_simulations, n_participants, n_trials_per_interval, avg_incp, avg_rate, avg_asymp, 
                delta_intercept = 0.1, delta_rate = 0.0, delta_asymptote = 0.0) 
 
+res0_0_0 <- feather::read_feather("./simulations_output/simulation_20-100-0.90-1.50-3.00_0.00-0.00-0.00/all_simulations.feather") 
+res0.05_0_0 <- feather::read_feather("./simulations_output/simulation_20-100-0.90-1.50-3.00_0.05-0.00-0.00/all_simulations.feather") 
+res0.10_00 <- feather::read_feather("./simulations_output/simulation_20-100-0.90-1.50-3.00_0.10-0.00-0.00/all_simulations.feather") 
 
+
+summary(res0_0_0)
+head(res0_0_0)
+
+
+subset(res0_0_0, is.na(R2)) %>% View()
