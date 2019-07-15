@@ -1,7 +1,7 @@
-#source("./simulations_functions.R")
+source("./simulations_functions.R")
 library(mrsat)
-#library(doMC)
-#doMC::registerDoMC(4)
+library(doMC)
+doMC::registerDoMC(4)
 
 run_simulation <- function(n_simulations, n_participants, n_trials_per_interval, avg_incp, avg_rate, avg_asymp, delta_intercept, delta_rate, delta_asymptote) 
 {
@@ -43,7 +43,7 @@ run_simulation <- function(n_simulations, n_participants, n_trials_per_interval,
   
   sim_res <- plyr::ldply(1:n_simulations, function(j) {
       estimates <- sim_participants(n_trials_per_interval, time, intercepts, rates, asymptotes, j)
-  }, .parallel = F)# , .progress = "text")
+  }, .parallel = T)# , .progress = "text")
   
   
   feather::write_feather(sim_res, path = paste0(dir, "/", "all_simulations", ".feather"))
@@ -64,12 +64,20 @@ avg_incp <- .9
 avg_rate <- 1.5
 avg_asymp <- 3.0
 
-run_simulation(n_simulations, n_participants, n_trials_per_interval, avg_incp, avg_rate, avg_asymp, 
-               delta_intercept = 0.0, delta_rate = 0.0, delta_asymptote = 0.0) 
-run_simulation(n_simulations, n_participants, n_trials_per_interval, avg_incp, avg_rate, avg_asymp, 
-               delta_intercept = 0.05, delta_rate = 0.0, delta_asymptote = 0.0) 
-run_simulation(n_simulations, n_participants, n_trials_per_interval, avg_incp, avg_rate, avg_asymp, 
-               delta_intercept = 0.1, delta_rate = 0.0, delta_asymptote = 0.0) 
+run_cur_sim <- function(delta_intercept, delta_rate, delta_asymptote) {
+    run_simulation(n_simulations, n_participants, n_trials_per_interval, avg_incp, avg_rate, avg_asymp, 
+                   delta_intercept = delta_intercept, delta_rate = delta_rate, delta_asymptote = delta_asymptote) 
+}
+
+
+for (delta_asymptote in c(0, .1, .25, .5, 1)) {
+    for (delta_rate in c(0, .05, .1, .2, .3)) {
+        for (delta_intercept in c(0, .05, .1, .15, .2, .3)) {
+              run_cur_sim(delta_intercept, delta_rate, delta_asymptote) 
+        }
+    }
+}
+
 
 res0_0_0 <- feather::read_feather("./simulations_output/simulation_20-100-0.90-1.50-3.00_0.00-0.00-0.00/all_simulations.feather") 
 res0.05_0_0 <- feather::read_feather("./simulations_output/simulation_20-100-0.90-1.50-3.00_0.05-0.00-0.00/all_simulations.feather") 
