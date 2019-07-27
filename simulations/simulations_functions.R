@@ -19,8 +19,6 @@ satf_gen_cond <- function(mu, criterion, time, n, label) {
   trial = rep(1:n, each = length(time))
   interval <- 1:length(time)
   df <- data.frame(condition = label, interval = interval, time = time, trial = trial, mu = mu, criterion = criterion)
-  #df$p_yes <- p_yes(mu, criterion)
-  #df$response <- sapply(df$p_yes, function(p_yes) r_yes(n = 1, p_yes))
   df$evidence_position <- rnorm(nrow(df), mean = mu, sd = 1)
   df$response <- df$evidence_position > criterion
   df %>% dplyr::select(condition, interval, time, trial, response)
@@ -84,30 +82,35 @@ cmp_dprime <- function(data) {
   data
 }
 
-mrsat_fitcurve <- function(data, pc = list(asym = c(1, 2), rate = c(1, 2), incp = c(1, 2)), show_plot = FALSE)
+mrsat_fitcurve <- function(data, pc = list(asym = c(1, 2), rate = c(1, 2), incp = c(1, 2)), 
+                                 startvals, show_plot = FALSE)
 {
   data <- data %>%  dplyr::select(bin = interval, hit, hit.correction,
                                   hit.denom = n_signal, fa, fa.correction, fa.denom = n_noise, 
                                   lags = time, dprimes = dprime, condition)
   
-  #par_constraints = get.param(pc, auto.asym = FALSE, data = data)
-  fit <- fit.SATcurve(data, par.cond = pc)
+  par_constraints = get.param(pc, auto.asym = FALSE, 
+                              asym = c(startvals$asymptote, 0.1, 5), 
+                              rate = c(startvals$rate, 0.3, 5), 
+                              incp = c(startvals$intercept, 0.1, 2), data = data)
+  fit <- fit.SATcurve(data, par.cond = pc, params = par_constraints, maxit = 10^6)
   sum_curve <- summary.SATcurve(fit)
-  
-  if(show_plot) plot(fit, main = "222")
+  convergence <- fit$fit[c('convergence', 'iterations')]
+  sum_curve %<>% cbind( convergence ) 
   
   n_unique <- function(x) length(unique(x))
   
   model_id <- sapply(pc, n_unique) %>% paste(collapse = "-")
 
-  model_fit <- sum_curve[c("incp1", "incp2", "rate1", "rate2", "asym1", "asym2", "R2", "adjR2", "logLik", "AIC")]
+  model_fit <- sum_curve#[c("incp1", "incp2", "rate1", "rate2", "asym1", "asym2", "R2", "adjR2", "logLik", "AIC")]
   model_fit$model <- model_id
   model_fit %<>% dplyr::rename(intercept1 = incp1, intercept2 = incp2, asymptote1 = asym1, asymptote2 = asym2)
   
   model_fit
 }
 
-sim_participant <- function(n, time, intercept, rate, asymptote, debug_fname = NULL, show_plot = FALSE) 
+sim_participant <- function(n, time, intercept, rate, asymptote, fit_start,
+                            debug_fname = NULL, show_plot = FALSE) 
 {
   responses1 <- satf_gen(time = time, n = n, intercept = intercept[1], rate = rate[1], asymptote = asymptote[1], label = "condition1")
   responses2 <- satf_gen(time = time, n = n, intercept = intercept[2], rate = rate[2], asymptote = asymptote[2], label = "condition2")
@@ -116,25 +119,24 @@ sim_participant <- function(n, time, intercept, rate, asymptote, debug_fname = N
   acc_stat <- cmp_acc_stat(data = responses)
   acc_stat <- cmp_dprime(data = acc_stat)
   
-  res111 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 1), rate = c(1, 1), incp = c(1, 1)), show_plot = FALSE)
-  res112 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 1), rate = c(1, 1), incp = c(1, 2)), show_plot = FALSE)
-  res121 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 1), rate = c(1, 2), incp = c(1, 1)), show_plot = FALSE)
-  res122 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 1), rate = c(1, 2), incp = c(1, 2)), show_plot = FALSE)
-  res211 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 2), rate = c(1, 1), incp = c(1, 1)), show_plot = FALSE)
-  res221 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 2), rate = c(1, 2), incp = c(1, 1)), show_plot = FALSE)
-  res212 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 2), rate = c(1, 1), incp = c(1, 2)), show_plot = FALSE)
-  res222 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 2), rate = c(1, 2), incp = c(1, 2)), show_plot = FALSE)
+  res111 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 1), rate = c(1, 1), incp = c(1, 1)), fit_start)
+  res112 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 1), rate = c(1, 1), incp = c(1, 2)), fit_start)
+  res121 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 1), rate = c(1, 2), incp = c(1, 1)), fit_start)
+  res122 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 1), rate = c(1, 2), incp = c(1, 2)), fit_start)
+  res211 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 2), rate = c(1, 1), incp = c(1, 1)), fit_start)
+  res221 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 2), rate = c(1, 2), incp = c(1, 1)), fit_start)
+  res212 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 2), rate = c(1, 1), incp = c(1, 2)), fit_start)
+  res222 <- mrsat_fitcurve(acc_stat, pc = list(asym = c(1, 2), rate = c(1, 2), incp = c(1, 2)), fit_start)
   res <- dplyr::bind_rows(res111, res112, res121, res122, res211, res221, res212, res222)
   
-  res %<>% cbind(data.frame(true_intercept1 = intercept[1], true_intercept2 = intercept[2],
-                           true_rate1 = rate[1], true_rate2 = rate[2],
-                           true_asymptote1 = asymptote[1], true_asymptote2 = asymptote[2]))
+  true_params <- data.frame(true_intercept1 = intercept[1], true_intercept2 = intercept[2],
+                            true_rate1 = rate[1], true_rate2 = rate[2],
+                            true_asymptote1 = asymptote[1], true_asymptote2 = asymptote[2])
+  res %<>% cbind(true_params)
+  res %<>% dplyr::select(model, true_intercept1:true_asymptote2, asymptote1:intercept2, R2:iterations)
   
-  res %<>% dplyr::select(model, true_intercept1, true_intercept2, true_rate1, true_rate2,
-                        true_asymptote1, true_asymptote2, R2, adjR2, logLik, AIC, 
-                        intercept1, intercept2, 
-                        rate1, rate2, 
-                        asymptote1, asymptote2)
+  attr(res, "responses") <- responses  
+  attr(res, "acc_stat") <- acc_stat  
   
   if ( !is.null(debug_fname) && any(is.na(res$R2)) ) {
       save(responses, res, file = debug_fname)

@@ -1,3 +1,0 @@
-useDynLib(satf, .registration=TRUE)
-exportPattern("^[[:alpha:]]+")
-importFrom(Rcpp, evalCpp)
