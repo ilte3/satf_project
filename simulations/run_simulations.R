@@ -3,9 +3,16 @@ library(mrsat)
 library(doMC)
 doMC::registerDoMC(parallel::detectCores(logical=FALSE))
 
+simulate_mrsat = TRUE
+
 run_simulation <- function(n_simulations, n_participants, n_trials_per_interval, avg_incp, avg_rate, avg_asymp, delta_intercept, delta_rate, delta_asymptote) 
 {
-  dir <- sprintf("./simulations_output/simulation_%d-%d-%0.3f-%0.3f-%0.3f_%0.3f-%0.3f-%0.3f", 
+  if (simulate_mrsat)
+    fname_template <- "./simulations_output_mr/simulation_%d-%d-%0.3f-%0.3f-%0.3f_%0.3f-%0.3f-%0.3f"
+  else
+    fname_template <- "./simulations_output/simulation_%d-%d-%0.3f-%0.3f-%0.3f_%0.3f-%0.3f-%0.3f"
+  
+  dir <- sprintf(fname_template, 
                  n_participants, n_trials_per_interval, 
                  avg_incp, avg_rate, avg_asymp, 
                  delta_intercept, delta_rate, delta_asymptote)
@@ -16,8 +23,7 @@ run_simulation <- function(n_simulations, n_participants, n_trials_per_interval,
   } else {
       dir.create(dir, recursive = T)
   }
-  
-
+ 
   intercept <- avg_incp + c(-.5, .5)*delta_intercept
   rate <- avg_rate + c(-.5, .5)*delta_rate
   asymptote <- avg_asymp + c(-.5, .5)*delta_asymptote
@@ -25,14 +31,19 @@ run_simulation <- function(n_simulations, n_participants, n_trials_per_interval,
   intercepts <- rep(list(intercept), n_participants)
   rates <- rep(list(rate), n_participants)
   asymptotes <- rep(list(asymptote), n_participants)
+  
+  if (simulate_mrsat)
+    fn_sim_participant <- sim_participant_mr
+  else
+    fn_sim_participant <- sim_participant
 
   sim_participants <- function(n_trials_per_interval, time, intercepts, rates, asymptotes, simulation_id)
   {
       estimates <- 
       plyr::ldply(1:n_participants, function(i) {
-          estimates_i <- sim_participant(n_trials_per_interval, time, intercepts[[i]], rates[[i]], asymptotes[[i]], 
-                                         fit_start = list(intercept = avg_incp, rate = avg_rate, asymptote = avg_asymp),
-                                         debug_fname = paste0(dir, "/", simulation_id, "_", i, ".rda") )
+          estimates_i <- fn_sim_participant(n_trials_per_interval, time, intercepts[[i]], rates[[i]], asymptotes[[i]], 
+                                            fit_start = list(intercept = avg_incp, rate = avg_rate, asymptote = avg_asymp),
+                                            debug_fname = paste0(dir, "/", simulation_id, "_", i, ".rda") )
           estimates_i %T>% {.$participant_id = i}
       }) #, .progress = "text")
 

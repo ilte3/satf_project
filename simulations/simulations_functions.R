@@ -14,6 +14,31 @@ r_yes <- function(n, p_yes) {
   runif(n) <= p_yes
 }
 
+
+satf_gen_cond_mr <- function(mu, criterion, time, n, label) {
+  stopifnot(length(mu) == length(criterion) && length(criterion) == length(time))
+  trial = rep(1:n, each = length(time))
+  interval <- 1:length(time)
+  
+  df <- data.frame(condition = label, interval = interval, time = time, trial = trial, mu = mu, 
+                   criterion = criterion, delta_evidence = c(0, diff(mu)) )
+  
+  # generate start position (for index=1), and delta due to noise (for index > 1) 
+  df$evidence_rel_position <- rnorm(nrow(df), mean = 0, sd = 1)
+  # determine the relative evidence positions (modulo the provided mus)
+  df %<>% group_by(trial) %>% dplyr::mutate(evidence_rel_position = cumsum(evidence_rel_position)/sqrt(interval),
+                                            evidence_position = evidence_rel_position + mu#,
+                                            #cor = cor(evidence_rel_position, lag(evidence_rel_position), use = "complete.obs")
+  )
+  # NOTE: The above assumptions about the generative process for MR SAT data results in the serial correlation between
+  #       evidence_rel_position values being abound ~0.6. Other assumptions (lower or higher SD) would result in a different
+  #       correlation coefficient.
+  
+  df$response <- df$evidence_position > criterion
+  df %>% dplyr::select(condition, interval, time, trial, response)
+  df
+}
+
 satf_gen_cond <- function(mu, criterion, time, n, label) {
   stopifnot(length(mu) == length(criterion) && length(criterion) == length(time))
   trial = rep(1:n, each = length(time))
@@ -24,7 +49,7 @@ satf_gen_cond <- function(mu, criterion, time, n, label) {
   df %>% dplyr::select(condition, interval, time, trial, response)
 }
 
-satf_gen <- function(time, n, intercept, rate, asymptote, label = "condition1") {
+satf_gen <- function(time, n, intercept, rate, asymptote, label = "condition1", satf_gen_cond = satf_gen_cond) {
   dprime <- satf(time, intercept, rate, asymptote)
   criterion <- 0.5*dprime
   df0 <- satf_gen_cond(mu = dprime*0, criterion = criterion, time = time, n = n, label = label)
@@ -35,7 +60,9 @@ satf_gen <- function(time, n, intercept, rate, asymptote, label = "condition1") 
   rbind(df0, df1)
 }
 
-#fix_extreme_percentages <- function()
+satf_gen_mr <- function(time, n, intercept, rate, asymptote, label) {
+  satf_gen(time = time, n = n, intercept = intercept, rate = rate, asymptote = asymptote, label = label, satf_gen_cond = satf_gen_cond_mr)
+}
 
 cmp_acc_stat <- function(data)
 {
@@ -109,8 +136,13 @@ mrsat_fitcurve <- function(data, pc = list(asym = c(1, 2), rate = c(1, 2), incp 
   model_fit
 }
 
+sim_participant_mr <- function(n, time, intercept, rate, asymptote, fit_start, debug_fname = NULL) {
+  sim_participant(n, time, intercept, rate, asymptote, fit_start, debug_fname = NULL, satf_gen = satf_gen_mr) 
+    
+}
+
 sim_participant <- function(n, time, intercept, rate, asymptote, fit_start,
-                            debug_fname = NULL, show_plot = FALSE) 
+                            debug_fname = NULL, satf_gen = satf_gen) 
 {
   responses1 <- satf_gen(time = time, n = n, intercept = intercept[1], rate = rate[1], asymptote = asymptote[1], label = "condition1")
   responses2 <- satf_gen(time = time, n = n, intercept = intercept[2], rate = rate[2], asymptote = asymptote[2], label = "condition2")
