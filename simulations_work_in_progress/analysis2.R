@@ -48,13 +48,48 @@ df222 <- df %>% filter(model == "2-2-2")
 #I would like to create a loop that repeats the t-test function every 20 row.
 dfff <- df222
 conv_n_participants <- function(df) {
-  df <- df %T>% {.$n_participants_experimental = rep(c(1:20), nrow(df)/20)}
+  # stopifnot(nrow(df)/20 == round(nrow(df)/20)) 
+  df <- df %T>% {.$n_for_t_tests = rep(c(1:(nrow(dfff)/20)), each = 20)}
 }
 dfff <- conv_n_participants(dfff)
 
-#The first 20 would have an output like this 1-row data frame below.
-t_tests <- t.test(df222$intercept1[0:20], df222$intercept2[0:20], paired = T, conf.level = 0.95)
-library(tidystats)
-t_tests_df <- tidy_stats(t_tests)
-t_tests_df <- with(t_tests_df, data.frame(t_value = value[2], p_value = value[4], ci_lower = value[5], ci_upper = value[6]))
-t_tests_df$dif_significance <- with(t_tests_df, ifelse(t_value > 2, "YES", "NO"))
+#The first 20 would have an output like this 1-row data frame below (t_tests_df).
+
+t_test_incp <- t.test(dfff$intercept1[0:20], dfff$intercept2[0:20], paired = T, conf.level = 0.95)
+t_test_rate <- t.test(dfff$rate1[0:20], dfff$rate2[0:20], paired = T, conf.level = 0.95)
+t_test_asymp <- t.test(dfff$asymptote1[0:20], dfff$asymptote2[0:20], paired = T, conf.level = 0.95)
+
+
+t_tests_df <- data.frame(t_incp = t_test_incp$statistic[["t"]], t_rate = t_test_rate$statistic[["t"]],
+                         t_asymp = t_test_asymp$statistic[["t"]])
+
+t_tests_df <- t_tests_df %T>% {.$dif_significance_incp = ifelse(.$t_incp > 2, "YES", "NO")} %T>%
+                              {.$dif_significance_rate = ifelse(.$t_rate > 2, "YES", "NO")} %T>%
+                              {.$dif_significance_asymp = ifelse(.$t_asymp > 2, "YES", "NO")} %>%
+                              dplyr::select(t_incp, dif_significance_incp, t_rate, dif_significance_rate,
+                                           t_asymp, dif_significance_asymp)
+t_tests_df
+
+xxx <- plyr::ldply(1:dfff$n_for_t_tests, function(df) {
+    t_test_incp <- t.test(dfff$intercept1, dfff$intercept2, paired = T, conf.level = 0.95)
+    t_test_rate <- t.test(dfff$rate1, dfff$rate2, paired = T, conf.level = 0.95)
+    t_test_asymp <- t.test(dfff$asymptote1, dfff$asymptote2, paired = T, conf.level = 0.95)
+    
+    t_tests_df <- data.frame(t_incp = t_test_incp$statistic[["t"]], t_rate = t_test_rate$statistic[["t"]],
+                             t_asymp = t_test_asymp$statistic[["t"]])
+    
+    t_tests_df <- t_tests_df %T>% {.$dif_significance_incp = ifelse(.$t_incp > 2, "YES", "NO")} %T>%
+      {.$dif_significance_rate = ifelse(.$t_rate > 2, "YES", "NO")} %T>%
+      {.$dif_significance_asymp = ifelse(.$t_asymp > 2, "YES", "NO")} %>%
+      dplyr::select(t_incp, dif_significance_incp, t_rate, dif_significance_rate,
+                    t_asymp, dif_significance_asymp)
+    t_tests_df
+})
+
+for (i in dfff$n_for_t_tests) {
+  t_test_incp <- t.test(dfff$intercept1[i], dfff$intercept2[i], paired = T, conf.level = 0.95)
+  t_test_rate <- t.test(dfff$rate1[i], dfff$rate2[i], paired = T, conf.level = 0.95)
+  t_test_asymp <- t.test(dfff$asymptote1[i], dfff$asymptote2[i], paired = T, conf.level = 0.95)
+}
+
+
