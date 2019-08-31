@@ -70,26 +70,71 @@ t_tests_df <- t_tests_df %T>% {.$dif_significance_incp = ifelse(.$t_incp > 2, "Y
                                            t_asymp, dif_significance_asymp)
 t_tests_df
 
-xxx <- plyr::ldply(1:dfff$n_for_t_tests, function(df) {
-    t_test_incp <- t.test(dfff$intercept1, dfff$intercept2, paired = T, conf.level = 0.95)
-    t_test_rate <- t.test(dfff$rate1, dfff$rate2, paired = T, conf.level = 0.95)
-    t_test_asymp <- t.test(dfff$asymptote1, dfff$asymptote2, paired = T, conf.level = 0.95)
-    
-    t_tests_df <- data.frame(t_incp = t_test_incp$statistic[["t"]], t_rate = t_test_rate$statistic[["t"]],
-                             t_asymp = t_test_asymp$statistic[["t"]])
-    
-    t_tests_df <- t_tests_df %T>% {.$dif_significance_incp = ifelse(.$t_incp > 2, "YES", "NO")} %T>%
-      {.$dif_significance_rate = ifelse(.$t_rate > 2, "YES", "NO")} %T>%
-      {.$dif_significance_asymp = ifelse(.$t_asymp > 2, "YES", "NO")} %>%
-      dplyr::select(t_incp, dif_significance_incp, t_rate, dif_significance_rate,
-                    t_asymp, dif_significance_asymp)
-    t_tests_df
-})
+# xxx <- plyr::ldply(1:dfff$n_for_t_tests, function(df) {
+#     t_test_incp <- t.test(dfff$intercept1, dfff$intercept2, paired = T, conf.level = 0.95)
+#     t_test_rate <- t.test(dfff$rate1, dfff$rate2, paired = T, conf.level = 0.95)
+#     t_test_asymp <- t.test(dfff$asymptote1, dfff$asymptote2, paired = T, conf.level = 0.95)
+#     
+#     t_tests_df <- data.frame(t_incp = t_test_incp$statistic[["t"]], t_rate = t_test_rate$statistic[["t"]],
+#                              t_asymp = t_test_asymp$statistic[["t"]])
+#     
+#     t_tests_df <- t_tests_df %T>% {.$dif_significance_incp = ifelse(.$t_incp > 2, "YES", "NO")} %T>%
+#       {.$dif_significance_rate = ifelse(.$t_rate > 2, "YES", "NO")} %T>%
+#       {.$dif_significance_asymp = ifelse(.$t_asymp > 2, "YES", "NO")} %>%
+#       dplyr::select(t_incp, dif_significance_incp, t_rate, dif_significance_rate,
+#                     t_asymp, dif_significance_asymp)
+#     t_tests_df
+# })
+# 
+# for (i in dfff$n_for_t_tests) {
+#   t_test_incp <- t.test(dfff$intercept1[i], dfff$intercept2[i], paired = T, conf.level = 0.95)
+#   t_test_rate <- t.test(dfff$rate1[i], dfff$rate2[i], paired = T, conf.level = 0.95)
+#   t_test_asymp <- t.test(dfff$asymptote1[i], dfff$asymptote2[i], paired = T, conf.level = 0.95)
+# }
 
-for (i in dfff$n_for_t_tests) {
-  t_test_incp <- t.test(dfff$intercept1[i], dfff$intercept2[i], paired = T, conf.level = 0.95)
-  t_test_rate <- t.test(dfff$rate1[i], dfff$rate2[i], paired = T, conf.level = 0.95)
-  t_test_asymp <- t.test(dfff$asymptote1[i], dfff$asymptote2[i], paired = T, conf.level = 0.95)
+x <- function(df) {
+  df %<>% group_by(n_for_t_tests) %>% summarize(intercept1 = mean(intercept1), intercept2 = mean(intercept2),
+                                                rate1 = mean(rate1), rate2 = mean(rate2),
+                                                asymptote1 = mean(asymptote1), asymptote2 = mean(asymptote2))
+  df
 }
 
+dff <- x(dfff)
 
+xxx <- function(df, n) {
+    plyr::ldply(1:n, function (i) {
+          t_test_incp <- t.test(df$intercept1[i], df$intercept2[i], paired = T, conf.level = 0.95)
+          t_test_rate <- t.test(df$rate1[i], df$rate2[i], paired = T, conf.level = 0.95)
+          t_test_asymp <- t.test(df$asymptote1[i], df$asymptote2[i], paired = T, conf.level = 0.95)
+    
+          df <- df %T>% {.$t_incp = t_test_incp$statistic[["t"]]} %T>%
+                        {.$t_rate = t_test_rate$statistic[["t"]]} %T>%
+                        {.$t_asymp = t_test_asymp$statistic[["t"]]} %T>%
+                        {.$dif_significance_incp = ifelse(.$t_incp > 2, "YES", "NO")} %T>%
+                        {.$dif_significance_rate = ifelse(.$t_rate > 2, "YES", "NO")} %T>%
+                        {.$dif_significance_asymp = ifelse(.$t_asymp > 2, "YES", "NO")} %>%
+                        dplyr::select(t_incp, dif_significance_incp, t_rate, dif_significance_rate,
+                              t_asymp, dif_significance_asymp)
+
+    })
+    df
+}
+
+n <- nrow(dff)
+asd <- xxx(dff, n)
+
+dff$t_incp <- t.test(df$intercept1[1], df$intercept2[1], paired = T, conf.level = 0.95)$statistic[["t"]]
+
+###########################################
+
+group <- gl(250, 20)
+
+spl_df <- split(df, group)
+
+fun_t_test <- function(df) {
+  with(df, c(t_incp = t.test(intercept1, intercept2, paired = T, conf.level = 0.95)$statistic, p_incp = t.test(intercept1, intercept2)$p.value,
+             t_rate = t.test(rate1, rate2, paired = T, conf.level = 0.95)$statistic, p_rate = t.test(rate1, rate2)$p.value,
+             t_asymp = t.test(asymptote1, asymptote2, paired = T, conf.level = 0.95)$statistic, p_asymp = t.test(asymptote1, asymptote2)$p.value))
+}
+
+x <- as.data.frame(t(sapply(spl_df, FUN = fun_t_test)))
