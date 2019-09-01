@@ -2,7 +2,7 @@ library(tidyverse)
 library(magrittr)
 library(ggpubr)
 
-df <- feather::read_feather(path = "C:/Users/Ýlte/Desktop/all_simulations.feather")
+df <- feather::read_feather(path = "all_simulations.feather")
 df222 <- df %>% filter(model == "2-2-2")
 
 n_participant_exp <- function(df) {
