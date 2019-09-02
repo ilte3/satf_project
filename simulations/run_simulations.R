@@ -51,7 +51,7 @@ run_simulation <- function(n_simulations, n_participants, n_trials_per_interval,
                     dplyr::select(simulation_id, model, participant_id,
                                   true_intercept1:iterations)
 
-      save( estimates, file = paste0(dir, "/", simulation_id, ".rda") )
+      #save( estimates, file = paste0(dir, "/", simulation_id, ".rda") )
 
       estimates
   }
@@ -59,6 +59,8 @@ run_simulation <- function(n_simulations, n_participants, n_trials_per_interval,
   sim_res <- plyr::ldply(1:n_simulations, function(j) {
       estimates <- sim_participants(n_trials_per_interval, time, intercepts, rates, asymptotes, j)
   }, .parallel = T) #, .progress = "text")
+  
+  print(c("Finished", date()))
   
   feather::write_feather(sim_res, path = fname_all)
 }
@@ -68,7 +70,7 @@ run_simulation <- function(n_simulations, n_participants, n_trials_per_interval,
 
 #options(warn = 1)
 
-n_simulations <- 100
+n_simulations <- 20
 n_participants <- 50
 time <- seq(0, 5.6, 0.35)
 
@@ -77,13 +79,13 @@ run_cur_sim <- function(n_obs_per_interval_per_cond, avg_incp, avg_rate, avg_asy
                    delta_intercept = delta_intercept, delta_rate = delta_rate, delta_asymptote = delta_asymptote) 
 }
 
-for (n_obs_per_interval_per_cond in c(80, 60, 40, 20)) {
-  for (avg_rate in c(1, 1.2, 0.8) ) {
-    for (avg_asymp in c(2, 1, 3)  ) {
-      for (avg_incp in (.7 + .350*c(3/4, 2/4, 1/4, 0)) ) {
-        for (delta_asymptote in c(0, .125, .25, .5, 1)) {
-          for (delta_rate in c(0, .025, .05, .1, .2)) {
-            for (delta_intercept in c(0, .025, .05, .1, .15)) {
+for (avg_rate in c(1, 1.2, 0.8) %>% sample ) {
+  for (avg_asymp in c(2, 1, 3) %>% sample ) {
+    for (n_obs_per_interval_per_cond in c(80, 60, 40, 20) %>% sample ) {
+      for (avg_incp in (.7 + .350*c(3/4, 2/4, 1/4, 0)) %>% sample ) {
+        for (delta_asymptote in c(0, .125, .25, .5, 1) %>% sample ) {
+          for (delta_rate in c(0, .025, .05, .1, .2) %>% sample ) {
+            for (delta_intercept in c(0, .025, .05, .1, .15) %>% sample ) {
               run_cur_sim(n_obs_per_interval_per_cond, avg_incp, avg_rate, avg_asymp, delta_intercept, delta_rate, delta_asymptote)
             }
           }

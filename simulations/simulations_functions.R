@@ -35,8 +35,7 @@ satf_gen_cond_mr <- function(mu, criterion, time, n, label) {
   #       correlation coefficient.
   
   df$response <- df$evidence_position > criterion
-  df %>% dplyr::select(condition, interval, time, trial, response)
-  df
+  df %>% ungroup() %>% dplyr::select(condition, interval, time, trial, response)
 }
 
 satf_gen_cond <- function(mu, criterion, time, n, label) {
@@ -49,11 +48,11 @@ satf_gen_cond <- function(mu, criterion, time, n, label) {
   df %>% dplyr::select(condition, interval, time, trial, response)
 }
 
-satf_gen <- function(time, n, intercept, rate, asymptote, label = "condition1", satf_gen_cond = satf_gen_cond) {
+satf_gen <- function(time, n, intercept, rate, asymptote, label = "condition1", fn_satf_gen_cond = satf_gen_cond) {
   dprime <- satf(time, intercept, rate, asymptote)
   criterion <- 0.5*dprime
-  df0 <- satf_gen_cond(mu = dprime*0, criterion = criterion, time = time, n = n, label = label)
-  df1 <- satf_gen_cond(mu = dprime, criterion = criterion, time = time, n = n, label = label)
+  df0 <- fn_satf_gen_cond(mu = dprime*0, criterion = criterion, time = time, n = n, label = label)
+  df1 <- fn_satf_gen_cond(mu = dprime, criterion = criterion, time = time, n = n, label = label)
   df0$is_signal <- 0
   df1$is_signal <- 1
   df1$trial = df1$trial + max(df0$trial)
@@ -61,7 +60,7 @@ satf_gen <- function(time, n, intercept, rate, asymptote, label = "condition1", 
 }
 
 satf_gen_mr <- function(time, n, intercept, rate, asymptote, label) {
-  satf_gen(time = time, n = n, intercept = intercept, rate = rate, asymptote = asymptote, label = label, satf_gen_cond = satf_gen_cond_mr)
+  satf_gen(time = time, n = n, intercept = intercept, rate = rate, asymptote = asymptote, label = label, fn_satf_gen_cond = satf_gen_cond_mr)
 }
 
 cmp_acc_stat <- function(data)
@@ -137,15 +136,15 @@ mrsat_fitcurve <- function(data, pc = list(asym = c(1, 2), rate = c(1, 2), incp 
 }
 
 sim_participant_mr <- function(n, time, intercept, rate, asymptote, fit_start, debug_fname = NULL) {
-  sim_participant(n, time, intercept, rate, asymptote, fit_start, debug_fname = NULL, satf_gen = satf_gen_mr) 
+  sim_participant(n, time, intercept, rate, asymptote, fit_start, debug_fname = NULL, fn_satf_gen = satf_gen_mr) 
     
 }
 
 sim_participant <- function(n, time, intercept, rate, asymptote, fit_start,
-                            debug_fname = NULL, satf_gen = satf_gen) 
+                            debug_fname = NULL, fn_satf_gen = satf_gen) 
 {
-  responses1 <- satf_gen(time = time, n = n, intercept = intercept[1], rate = rate[1], asymptote = asymptote[1], label = "condition1")
-  responses2 <- satf_gen(time = time, n = n, intercept = intercept[2], rate = rate[2], asymptote = asymptote[2], label = "condition2")
+  responses1 <- fn_satf_gen(time = time, n = n, intercept = intercept[1], rate = rate[1], asymptote = asymptote[1], label = "condition1")
+  responses2 <- fn_satf_gen(time = time, n = n, intercept = intercept[2], rate = rate[2], asymptote = asymptote[2], label = "condition2")
   responses <- rbind(responses1, responses2)
   
   acc_stat <- cmp_acc_stat(data = responses)
